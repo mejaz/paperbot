@@ -27,12 +27,16 @@ const createIndex = async (indexName) => {
 }
 
 export default async function handler(req, res) {
+	// 1. only allow POST methods
 	if (req.method !== 'POST') {
 		return res.status(400).send('method not supported')
 	}
 
 	try {
+		// 2. connect to the mongodb db
 		await connectDB()
+
+		// 3. parse the incoming FormData
 		let form = new formidable.IncomingForm();
 
 		form.parse(req, async (error, fields, files) => {
@@ -53,17 +57,21 @@ export default async function handler(req, res) {
 				return res.status(400).json({error: 'Invalid file data'});
 			}
 
+			// 4. upload the file to s3
 			let data = await s3Upload(process.env.S3_BUCKET, file)
-			// 1. create a pinecone index
+
+			// 5. initialize pinecone
 			const filenameWithoutExt = file.name.split(".")[0]
 			const filenameSlug = slugify(filenameWithoutExt, {
 				lower: true, strict: true
 			})
 
 			await initialize()  // initialize pinecone
+
+			// 6. create a pinecone index
 			await createIndex(filenameSlug)  // create index
 
-			// 2. save to database
+			// 7. save file info to the mongodb db
 			const myFile = new MyFileModel({
 				fileName: file.name,
 				fileUrl: data.Location,
@@ -71,6 +79,8 @@ export default async function handler(req, res) {
 			})
 			await myFile.save()
 			// await disconnectDB()
+
+			// 8. return the success response
 			return res.status(200).json({message: 'File uploaded to S3 and index created'});
 		})
 	} catch (e) {

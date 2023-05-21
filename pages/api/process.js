@@ -5,17 +5,19 @@ import {getEmbeddings} from "@/src/openaiServices";
 import pinecone, {initialize} from "@/src/pinecone";
 
 export default async function handler(req, res) {
+	// 1. check for POST call
 	if (req.method !== 'POST') {
 		return res.status(400).json({message: 'http method not allowed'})
 	}
 
 	try {
-		const {id} = req.body
-
+		// 2. connect to mongodb
 		await connectDB()
 
+		// 3. query the file by id
+		const {id} = req.body
+
 		const myFile = await MyFileModel.findById(id)
-		let vectors = []
 
 		if (!myFile) {
 			return res.status(400).json({message: 'file not found'})
@@ -24,6 +26,9 @@ export default async function handler(req, res) {
 		if(myFile.isProcessed) {
 			return res.status(400).json({message: 'file is already processed'})
 		}
+
+		// 4. Read PDF and iterate through pages
+		let vectors = []
 
 		let myFiledata = await fetch(myFile.fileUrl)
 
@@ -35,7 +40,10 @@ export default async function handler(req, res) {
 				let textContent = await page.getTextContent()
 				const text = textContent.items.map(item => item.str).join('');
 
+				// 5. Get embeddings for each page
 				const embedding = await getEmbeddings(text)
+
+				// 6. push to vector array
 				vectors.push({
 					id: `page${i + 1}`,
 					values: embedding,
@@ -45,17 +53,26 @@ export default async function handler(req, res) {
 					},
 				})
 			}
+
+			// 7. initialize pinecone
 			await initialize() // initialize pinecone
+
+			// 8. connect to the index
 			const index = pinecone.Index(myFile.vectorIndex)
+
+			// 9. upsert to pinecone index
 			await index.upsert({
 				upsertRequest: {
 					vectors,
 				}
 			});
 
+			// 10. update mongodb with isProcessed to true
 			myFile.isProcessed = true
 			await myFile.save()
 			// await disconnectDB()
+
+			// 11. return the response
 			return res.status(200).json({message: 'File processed successfully'})
 		} else {
 			// await disconnectDB()

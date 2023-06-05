@@ -1,5 +1,9 @@
 # PaperBot
 
+<p align="center">
+  <img src="public/demo.png" alt="demo" />
+</p>
+
 Upload any pdf file and ask questions from that pdf. 
 
 PaperBot generates embeddings from OpenAI embedding model and stores them in Pinecone Vector database. 

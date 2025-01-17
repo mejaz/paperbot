@@ -1,5 +1,7 @@
 # PaperBot
 
+
+
 <p align="center">
   <img src="public/demo.png" alt="demo" />
 </p>
@@ -36,3 +38,5 @@ To answer user's questions, PaperBot does a semantic search on Pinecone Vector d
 ## Contact
 
 mohdejazsiddiqui@gmail.com
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Y8Y618ZETK)
